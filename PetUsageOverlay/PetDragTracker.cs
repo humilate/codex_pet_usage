@@ -75,10 +75,15 @@ internal sealed class PetDragTracker
 
     private static bool IsOnMascot(double cursorX, double cursorY, double petX, double petY)
     {
-        // The visible sprite is inside this ellipse; the surrounding ring and
-        // quota cards cannot start a drag of their own.
-        var dx = (cursorX - petX - Placement.MascotWidth / 2) / 49;
+        // Codex also accepts drags in the small empty area above the top of
+        // the ring. Keep that strip narrow so the side arcs and cards cannot
+        // become independent drag handles.
+        var centerX = petX + Placement.MascotWidth / 2;
+        var topGap = Math.Abs(cursorX - centerX) <= 24 &&
+            cursorY >= petY + 8 &&
+            cursorY < petY + Placement.SpriteCenterYOffset - Placement.RingRadius;
+        var dx = (cursorX - centerX) / 49;
         var dy = (cursorY - petY - Placement.SpriteCenterYOffset) / 52;
-        return dx * dx + dy * dy <= 1;
+        return topGap || dx * dx + dy * dy <= 1;
     }
 }

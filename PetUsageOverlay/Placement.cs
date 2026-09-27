@@ -121,6 +121,18 @@ internal static class PlacementChecks
         if (ringPress != (700, 320) || ringMove != (700, 320))
             throw new Exception("圆环不应独立拖动");
         drag.Update(900, 402, false, 700, 320, screen, saved, time.AddMilliseconds(32));
+        var topGapDrag = new PetDragTracker();
+        var topGapPress = topGapDrag.Update(756, 340, true, 700, 320, screen, saved, time);
+        var topGapMove = topGapDrag.Update(856, 390, true, 700, 320, screen,
+            saved, time.AddMilliseconds(16));
+        if (topGapPress != (700, 320) || topGapMove != (800, 370))
+            throw new Exception("圆环上方空隙拖动未跟随宠物");
+        var outsideGapDrag = new PetDragTracker();
+        outsideGapDrag.Update(790, 340, true, 700, 320, screen, saved, time);
+        var outsideGapMove = outsideGapDrag.Update(890, 390, true, 700, 320,
+            screen, saved, time.AddMilliseconds(16));
+        if (outsideGapMove != (700, 320))
+            throw new Exception("圆环外侧不应独立拖动");
         var petPress = drag.Update(756, 402, true, 700, 320, screen, saved, time.AddMilliseconds(48));
         var petMove = drag.Update(856, 452, true, 700, 320, screen, saved, time.AddMilliseconds(64));
         var released = drag.Update(856, 452, false, 700, 320, screen, saved, time.AddMilliseconds(80));
