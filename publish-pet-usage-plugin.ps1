@@ -3,7 +3,6 @@ param([switch]$SkipInstall, [switch]$PreserveAutostart)
 $ErrorActionPreference = 'Stop'
 $pluginRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'plugins\pet-usage'
 $pluginSource = Join-Path $PSScriptRoot 'plugin'
-$manifest = Join-Path $pluginRoot '.codex-plugin\plugin.json'
 $skillRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) '.codex\skills\.system\plugin-creator'
 foreach ($relativePath in @(
     '.codex-plugin\plugin.json',
@@ -52,8 +51,10 @@ if ($LASTEXITCODE -ne 0) { throw '宠物用量监听程序发布失败。' }
 $oldSymbols = Join-Path $output 'PetUsageOverlay.pdb'
 if (Test-Path -LiteralPath $oldSymbols) { Remove-Item -LiteralPath $oldSymbols }
 
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'assets\pet-usage-orbit-preview.png') -Destination (Join-Path $pluginRoot 'assets\orbit.png')
-Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'assets\pet-usage-below-preview.png') -Destination (Join-Path $pluginRoot 'assets\below.png')
+foreach ($unusedAsset in @('assets\orbit.png', 'assets\below.png')) {
+    $path = Join-Path $pluginRoot $unusedAsset
+    if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path }
+}
 
 if (-not $PreserveAutostart) {
     & (Join-Path $pluginRoot 'scripts\install-autostart.ps1')
