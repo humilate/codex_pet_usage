@@ -92,6 +92,8 @@ internal sealed class UsageWindow : Window
     private DateTime lastRingFrameUtc;
     private DateTime shimmerStartedUtc;
     private double shimmerPhase = .38;
+    private double fiveHourFillFraction;
+    private double weeklyFillFraction;
 
     public UsageWindow()
     {
@@ -641,8 +643,10 @@ internal sealed class UsageWindow : Window
         var rightSweep = rightBottom + 360 - RightTopStart;
         fiveHourTrack.Data = ArcData(LeftTopStart, leftSweep);
         weeklyTrack.Data = ArcData(RightTopStart, rightSweep);
-        var leftFill = leftSweep * Math.Clamp((fiveHourPercent ?? 0) / 100, 0, 1);
-        var rightFill = rightSweep * Math.Clamp((weeklyPercent ?? 0) / 100, 0, 1);
+        fiveHourFillFraction = Math.Clamp((fiveHourPercent ?? 0) / 100, 0, 1);
+        weeklyFillFraction = Math.Clamp((weeklyPercent ?? 0) / 100, 0, 1);
+        var leftFill = leftSweep * fiveHourFillFraction;
+        var rightFill = rightSweep * weeklyFillFraction;
         var leftGeometry = ArcData(LeftTopStart, leftFill);
         var rightGeometry = ArcData(RightTopStart, rightFill);
         fiveHourUnderlay.Data = leftGeometry;
@@ -672,20 +676,38 @@ internal sealed class UsageWindow : Window
     private void UpdateWaterShimmer()
     {
         var angle = shimmerPhase * 2 * Math.PI;
-        fiveHourWaterShift.X = .10 * Math.Sin(angle);
-        fiveHourWaterShift.Y = .16 * Math.Cos(angle);
-        weeklyWaterShift.X = .10 * Math.Sin(angle + 1.3);
-        weeklyWaterShift.Y = .16 * Math.Cos(angle + 1.3);
-        fiveHourCausticShift.X = 1.8 * Math.Sin(angle + .4);
-        fiveHourCausticShift.Y = 2.4 * Math.Cos(angle + .4);
-        weeklyCausticShift.X = 1.8 * Math.Sin(angle + 1.7);
-        weeklyCausticShift.Y = 2.4 * Math.Cos(angle + 1.7);
-        fiveHourCausticFadeShift.X = 8 * Math.Sin(angle + .2);
-        fiveHourCausticFadeShift.Y = 11 * Math.Cos(angle + .2);
-        weeklyCausticFadeShift.X = 8 * Math.Sin(angle + 1.6);
-        weeklyCausticFadeShift.Y = 11 * Math.Cos(angle + 1.6);
+        var progress = Math.Clamp(ringMotion.Progress, 0, 1);
+        var leftFlow = ArcEndpointMotion(LeftTopStart +
+            (IdleLeftBottom - LeftTopStart) * fiveHourFillFraction,
+            LeftTopStart + (IdleLeftBottom +
+                (ControlsLeftBottom - IdleLeftBottom) * progress - LeftTopStart) * fiveHourFillFraction);
+        var rightFlow = ArcEndpointMotion(RightTopStart +
+            (IdleRightBottom + 360 - RightTopStart) * weeklyFillFraction,
+            RightTopStart + (IdleRightBottom +
+                (ControlsRightBottom - IdleRightBottom) * progress + 360 - RightTopStart) * weeklyFillFraction);
+        fiveHourWaterShift.X = leftFlow.X / RingCanvasSize + .10 * Math.Sin(angle);
+        fiveHourWaterShift.Y = leftFlow.Y / RingCanvasSize + .16 * Math.Cos(angle);
+        weeklyWaterShift.X = rightFlow.X / RingCanvasSize + .10 * Math.Sin(angle + 1.3);
+        weeklyWaterShift.Y = rightFlow.Y / RingCanvasSize + .16 * Math.Cos(angle + 1.3);
+        fiveHourCausticShift.X = leftFlow.X + 1.8 * Math.Sin(angle + .4);
+        fiveHourCausticShift.Y = leftFlow.Y + 2.4 * Math.Cos(angle + .4);
+        weeklyCausticShift.X = rightFlow.X + 1.8 * Math.Sin(angle + 1.7);
+        weeklyCausticShift.Y = rightFlow.Y + 2.4 * Math.Cos(angle + 1.7);
+        fiveHourCausticFadeShift.X = leftFlow.X + 8 * Math.Sin(angle + .2);
+        fiveHourCausticFadeShift.Y = leftFlow.Y + 11 * Math.Cos(angle + .2);
+        weeklyCausticFadeShift.X = rightFlow.X + 8 * Math.Sin(angle + 1.6);
+        weeklyCausticFadeShift.Y = rightFlow.Y + 11 * Math.Cos(angle + 1.6);
         fiveHourCaustics.Opacity = .81 + .04 * Math.Sin(angle + .6);
         weeklyCaustics.Opacity = .81 + .04 * Math.Sin(angle + 1.9);
+    }
+
+    private static System.Windows.Vector ArcEndpointMotion(double idleAngle, double currentAngle)
+    {
+        var idleRadians = idleAngle * Math.PI / 180;
+        var currentRadians = currentAngle * Math.PI / 180;
+        return new System.Windows.Vector(
+            Placement.RingRadius * (Math.Cos(currentRadians) - Math.Cos(idleRadians)),
+            Placement.RingRadius * (Math.Sin(currentRadians) - Math.Sin(idleRadians)));
     }
 
     private void AnimateRing(bool controlsVisible, DateTime now)
