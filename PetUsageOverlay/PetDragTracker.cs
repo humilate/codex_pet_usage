@@ -16,6 +16,8 @@ internal sealed class PetDragTracker
     private DateTime releasedUtc;
     private DateTime stateStampAtRelease;
 
+    public bool IsDragging => dragging;
+
     public (double X, double Y) Update(double cursorX, double cursorY, bool pressed,
         double petX, double petY, LogicalBounds display, DateTime stateStamp, DateTime now)
     {

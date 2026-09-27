@@ -32,7 +32,7 @@ internal sealed class UsageWindow : Window
 
     private readonly string stateFile = Path.Combine(CodexPaths.Home, ".codex-global-state.json");
     private readonly DispatcherTimer placementTimer = new(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
-    private readonly DispatcherTimer stateTimer = new() { Interval = TimeSpan.FromMilliseconds(33) };
+    private readonly DispatcherTimer stateTimer = new() { Interval = TimeSpan.FromMilliseconds(100) };
     private readonly DispatcherTimer progressTimer = new() { Interval = TimeSpan.FromMilliseconds(200) };
     private readonly DispatcherTimer quotaTimer = new() { Interval = TimeSpan.FromSeconds(60) };
     private readonly DispatcherTimer countdownTimer = new() { Interval = TimeSpan.FromSeconds(15) };
@@ -431,6 +431,7 @@ internal sealed class UsageWindow : Window
     {
         if (!petState.Open || !desktopAppRunning)
         {
+            SetTrackingRate(fast: false);
             petDrag.Reset();
             progressChecked = false;
             SetBadgesVisible(false);
@@ -448,12 +449,13 @@ internal sealed class UsageWindow : Window
         var cursorX = Left + local.X;
         var cursorY = Top + local.Y;
         var now = DateTime.UtcNow;
+        var pointerDown = GetAsyncKeyState(0x01) < 0;
         var nearRawPet = cursorX >= petState.X - 20 && cursorX <= petState.X + PetWidth + 20 &&
             cursorY >= petState.Y - 12 && cursorY <= petState.Y + ToolbarBottomOffset + 20;
         var reserveControls = nearRawPet || now - lastHoveredUtc < TimeSpan.FromMilliseconds(350);
         AnimateRing(reserveControls, now);
         var (displayedX, displayedY) = petDrag.Update(cursorX, cursorY,
-            GetAsyncKeyState(0x01) < 0, petState.X, petState.Y,
+            pointerDown, petState.X, petState.Y,
             displayArea, stateModifiedUtc, now);
 
         double targetTop;
@@ -484,8 +486,19 @@ internal sealed class UsageWindow : Window
             lastHoveredUtc = now;
         }
         var hoverActive = now - lastHoveredUtc < TimeSpan.FromMilliseconds(350);
+        SetTrackingRate(petDrag.IsDragging || nearRawPet || hoverActive ||
+            Math.Abs(ringMotion.Velocity) > .01 ||
+            Math.Abs(ringMotion.Progress - (reserveControls ? 1 : 0)) > .001);
         if (!hoverActive) progressChecked = false;
         SetBadgesVisible(hoverActive && progressChecked && now >= progressBlockUntilUtc);
+    }
+
+    private void SetTrackingRate(bool fast)
+    {
+        var placementInterval = TimeSpan.FromMilliseconds(fast ? 16 : 50);
+        var stateInterval = TimeSpan.FromMilliseconds(fast ? 33 : 100);
+        if (placementTimer.Interval != placementInterval) placementTimer.Interval = placementInterval;
+        if (stateTimer.Interval != stateInterval) stateTimer.Interval = stateInterval;
     }
 
     private bool BadgeContains(double x, double y, double badgeX, double badgeY) =>
