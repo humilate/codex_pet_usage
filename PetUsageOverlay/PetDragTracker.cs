@@ -45,7 +45,7 @@ internal sealed class PetDragTracker
         if (pressed && dragging)
         {
             predictedX = Math.Clamp(petDownX + cursorX - pointerDownX,
-                display.Left, Math.Max(display.Left, display.Right - UsageWindow.PetWidth + 4));
+                display.Left, Math.Max(display.Left, display.Right - Placement.MascotWidth));
             predictedY = Math.Clamp(petDownY + cursorY - pointerDownY,
                 display.Top, Math.Max(display.Top, display.Bottom - UsageWindow.ToolbarBottomOffset));
         }

@@ -133,7 +133,7 @@ internal static class PlacementChecks
         edgeDrag.Update(1615, 820, true, 1559, 738, screen, saved, time);
         var edgeMove = edgeDrag.Update(1715, 920, true, 1559, 738, screen,
             saved, time.AddMilliseconds(16));
-        if (edgeMove != (1559, 793))
+        if (edgeMove != (1595, 793))
             throw new Exception("宠物贴边拖动的圆环定位错误");
 
         var oneStep = new RingMotion(0, 0).Advance(1, .16);
