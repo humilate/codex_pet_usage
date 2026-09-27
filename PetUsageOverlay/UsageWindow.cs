@@ -72,6 +72,7 @@ internal sealed class UsageWindow : Window
     private OrbitPlacement orbitPlacement;
     private (Quota FiveHour, Quota Weekly)? quota;
     private DateTime lastHoveredUtc = DateTime.MinValue;
+    private readonly PetDragTracker petDrag = new();
     private bool visible;
     private bool ringVisible;
     private bool readingQuota;
@@ -430,6 +431,7 @@ internal sealed class UsageWindow : Window
     {
         if (!petState.Open || !desktopAppRunning)
         {
+            petDrag.Reset();
             progressChecked = false;
             SetBadgesVisible(false);
             if (ringVisible) { Opacity = 0; ringVisible = false; UpdateShimmerTimer(); }
@@ -450,10 +452,9 @@ internal sealed class UsageWindow : Window
             cursorY >= petState.Y - 12 && cursorY <= petState.Y + ToolbarBottomOffset + 20;
         var reserveControls = nearRawPet || now - lastHoveredUtc < TimeSpan.FromMilliseconds(350);
         AnimateRing(reserveControls, now);
-        // The native pet's published position is the sole source of placement.
-        // Cursor motion must never move the quota window independently.
-        var displayedX = petState.X;
-        var displayedY = petState.Y;
+        var (displayedX, displayedY) = petDrag.Update(cursorX, cursorY,
+            GetAsyncKeyState(0x01) < 0, petState.X, petState.Y,
+            displayArea, stateModifiedUtc, now);
 
         double targetTop;
         if (displayMode == DisplayMode.Orbit)
@@ -754,6 +755,7 @@ internal sealed class UsageWindow : Window
     }
     private delegate bool EnumWindowsProc(IntPtr window, IntPtr parameter);
     [DllImport("user32.dll")] private static extern bool GetCursorPos(out CursorPoint point);
+    [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int virtualKey);
     [DllImport("user32.dll")] private static extern bool IsWindow(IntPtr window);
     [DllImport("user32.dll")] private static extern bool IsWindowVisible(IntPtr window);
     [DllImport("user32.dll")] private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr parameter);

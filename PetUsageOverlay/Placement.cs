@@ -113,6 +113,29 @@ internal static class PlacementChecks
         if (UsageWindow.OrbitTopOffset + Placement.RingCenterY != Placement.SpriteCenterYOffset)
             throw new Exception("底部宠物与圆环联动错误");
 
+        var drag = new PetDragTracker();
+        var time = DateTime.UtcNow;
+        var saved = time;
+        var ringPress = drag.Update(704, 402, true, 700, 320, screen, saved, time);
+        var ringMove = drag.Update(900, 402, true, 700, 320, screen, saved, time.AddMilliseconds(16));
+        if (ringPress != (700, 320) || ringMove != (700, 320))
+            throw new Exception("圆环不应独立拖动");
+        drag.Update(900, 402, false, 700, 320, screen, saved, time.AddMilliseconds(32));
+        var petPress = drag.Update(756, 402, true, 700, 320, screen, saved, time.AddMilliseconds(48));
+        var petMove = drag.Update(856, 452, true, 700, 320, screen, saved, time.AddMilliseconds(64));
+        var released = drag.Update(856, 452, false, 700, 320, screen, saved, time.AddMilliseconds(80));
+        var persisted = drag.Update(856, 452, false, 800, 370, screen,
+            saved.AddMilliseconds(1), time.AddMilliseconds(96));
+        if (petPress != (700, 320) || petMove != (800, 370) ||
+            released != (800, 370) || persisted != (800, 370))
+            throw new Exception("宠物拖动与保存位置交接错误");
+        var edgeDrag = new PetDragTracker();
+        edgeDrag.Update(1615, 820, true, 1559, 738, screen, saved, time);
+        var edgeMove = edgeDrag.Update(1715, 920, true, 1559, 738, screen,
+            saved, time.AddMilliseconds(16));
+        if (edgeMove != (1559, 793))
+            throw new Exception("宠物贴边拖动的圆环定位错误");
+
         var oneStep = new RingMotion(0, 0).Advance(1, .16);
         var smallSteps = new RingMotion(0, 0);
         for (var frame = 0; frame < 10; frame++) smallSteps = smallSteps.Advance(1, .016);
