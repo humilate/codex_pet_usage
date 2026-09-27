@@ -1,0 +1,20 @@
+{
+  "name": "pet-usage",
+  "version": "0.1.0",
+  "description": "Show Codex five-hour and weekly quota around the desktop pet.",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Codex \u5ba0\u7269\u7528\u91cf",
+    "shortDescription": "\u5ba0\u7269\u989d\u5ea6\u73af\u4e0e\u4e0b\u65b9\u53cc\u5361\u7247\uff0c\u53ef\u968f\u65f6\u5207\u6362\u3002",
+    "longDescription": "\u5728 Codex \u684c\u9762\u5ba0\u7269\u65c1\u663e\u793a\u4e94\u5c0f\u65f6\u548c\u672c\u5468\u989d\u5ea6\u3002\u652f\u6301\u73af\u7ed5\u5706\u73af\u4e0e\u4e0b\u65b9\u53cc\u5361\u7247\u4e24\u79cd\u5e03\u5c40\uff0c\u5e76\u4fdd\u7559\u539f\u751f\u5ba0\u7269\u52a8\u753b\u53ca\u6309\u94ae\u3002",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [
+      "Read"
+    ],
+    "defaultPrompt": "\u663e\u793a\u5ba0\u7269\u7528\u91cf\uff0c\u5e76\u5207\u6362\u5e03\u5c40\u3002"
+  }
+}
