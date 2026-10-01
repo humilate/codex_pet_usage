@@ -1,9 +1,9 @@
 param([switch]$SkipInstall, [switch]$PreserveAutostart)
 
 $ErrorActionPreference = 'Stop'
-$pluginRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'plugins\pet-usage'
+$marketplaceRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) 'plugins'
+$pluginRoot = Join-Path $marketplaceRoot 'pet-usage'
 $pluginSource = Join-Path $PSScriptRoot 'plugin'
-$skillRoot = Join-Path ([Environment]::GetFolderPath('UserProfile')) '.codex\skills\.system\plugin-creator'
 foreach ($relativePath in @(
     '.codex-plugin\plugin.json',
     'skills\pet-usage\SKILL.md',
@@ -63,13 +63,37 @@ if (-not $PreserveAutostart) {
 }
 Start-ScheduledTask -TaskName $taskName
 
-python (Join-Path $skillRoot 'scripts\validate_plugin.py') $pluginRoot
-if ($LASTEXITCODE -ne 0) { throw '插件校验失败。' }
+$manifestPath = Join-Path $pluginRoot '.codex-plugin\plugin.json'
+$manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+if ($manifest.name -ne 'pet-usage' -or -not $manifest.version -or
+    -not (Test-Path -LiteralPath (Join-Path $pluginRoot 'skills\pet-usage\SKILL.md')) -or
+    -not (Test-Path -LiteralPath (Join-Path $output 'PetUsageOverlay.exe')) -or
+    -not (Test-Path -LiteralPath (Join-Path $output 'PetUsageWatcher.exe'))) {
+    throw '插件清单、技能或程序文件不完整。'
+}
 if ($SkipInstall) { return }
 
-python (Join-Path $skillRoot 'scripts\update_plugin_cachebuster.py') $pluginRoot
-if ($LASTEXITCODE -ne 0) { throw '插件版本更新失败。' }
-$marketplace = python (Join-Path $skillRoot 'scripts\read_marketplace_name.py')
-if ($LASTEXITCODE -ne 0) { throw '个人插件目录读取失败。' }
-codex plugin add "pet-usage@$marketplace"
+$marketplaceManifest = Join-Path $marketplaceRoot '.agents\plugins\marketplace.json'
+New-Item -ItemType Directory -Path (Split-Path -Parent $marketplaceManifest) -Force | Out-Null
+@{
+    name = 'personal'
+    interface = @{ displayName = 'Personal' }
+    plugins = @(@{
+        name = 'pet-usage'
+        source = @{ source = 'local'; path = './pet-usage' }
+        policy = @{ installation = 'AVAILABLE'; authentication = 'ON_INSTALL' }
+        category = 'Productivity'
+    })
+} | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $marketplaceManifest -Encoding utf8
+
+$marketplaces = codex plugin marketplace list --json | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0) { throw '无法读取插件目录配置。' }
+if (-not @($marketplaces.marketplaces | Where-Object name -eq 'personal').Count) {
+    codex plugin marketplace add $marketplaceRoot
+    if ($LASTEXITCODE -ne 0) { throw '个人插件目录注册失败。' }
+}
+
+$manifest.version = '0.1.0+codex.' + (Get-Date -AsUTC -Format 'yyyyMMddHHmmssfff')
+$manifest | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $manifestPath -Encoding utf8
+codex plugin add 'pet-usage@personal'
 if ($LASTEXITCODE -ne 0) { throw '插件安装失败。' }

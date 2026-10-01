@@ -677,14 +677,17 @@ internal sealed class UsageWindow : Window
     {
         var angle = shimmerPhase * 2 * Math.PI;
         var progress = Math.Clamp(ringMotion.Progress, 0, 1);
+        // Move the fine texture only a little as the arc retracts. Moving its
+        // fade mask with the endpoint hides the caustics on the short arc.
+        const double hoverFlow = .25;
         var leftFlow = ArcEndpointMotion(LeftTopStart +
             (IdleLeftBottom - LeftTopStart) * fiveHourFillFraction,
             LeftTopStart + (IdleLeftBottom +
-                (ControlsLeftBottom - IdleLeftBottom) * progress - LeftTopStart) * fiveHourFillFraction);
+                (ControlsLeftBottom - IdleLeftBottom) * progress - LeftTopStart) * fiveHourFillFraction) * hoverFlow;
         var rightFlow = ArcEndpointMotion(RightTopStart +
             (IdleRightBottom + 360 - RightTopStart) * weeklyFillFraction,
             RightTopStart + (IdleRightBottom +
-                (ControlsRightBottom - IdleRightBottom) * progress + 360 - RightTopStart) * weeklyFillFraction);
+                (ControlsRightBottom - IdleRightBottom) * progress + 360 - RightTopStart) * weeklyFillFraction) * hoverFlow;
         fiveHourWaterShift.X = leftFlow.X / RingCanvasSize + .10 * Math.Sin(angle);
         fiveHourWaterShift.Y = leftFlow.Y / RingCanvasSize + .16 * Math.Cos(angle);
         weeklyWaterShift.X = rightFlow.X / RingCanvasSize + .10 * Math.Sin(angle + 1.3);
@@ -693,10 +696,10 @@ internal sealed class UsageWindow : Window
         fiveHourCausticShift.Y = leftFlow.Y + 2.4 * Math.Cos(angle + .4);
         weeklyCausticShift.X = rightFlow.X + 1.8 * Math.Sin(angle + 1.7);
         weeklyCausticShift.Y = rightFlow.Y + 2.4 * Math.Cos(angle + 1.7);
-        fiveHourCausticFadeShift.X = leftFlow.X + 8 * Math.Sin(angle + .2);
-        fiveHourCausticFadeShift.Y = leftFlow.Y + 11 * Math.Cos(angle + .2);
-        weeklyCausticFadeShift.X = rightFlow.X + 8 * Math.Sin(angle + 1.6);
-        weeklyCausticFadeShift.Y = rightFlow.Y + 11 * Math.Cos(angle + 1.6);
+        fiveHourCausticFadeShift.X = 8 * Math.Sin(angle + .2);
+        fiveHourCausticFadeShift.Y = 11 * Math.Cos(angle + .2);
+        weeklyCausticFadeShift.X = 8 * Math.Sin(angle + 1.6);
+        weeklyCausticFadeShift.Y = 11 * Math.Cos(angle + 1.6);
         fiveHourCaustics.Opacity = .81 + .04 * Math.Sin(angle + .6);
         weeklyCaustics.Opacity = .81 + .04 * Math.Sin(angle + 1.9);
     }
